@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
-import { EXERCISES, getExerciseHistory } from '../data/mockData';
 
 const METRICS = [
   {
@@ -163,8 +162,37 @@ function MiniChart({ data, metric }) {
 }
 
 export default function ExerciseAnalytics() {
-  const [selectedExercise, setSelectedExercise] = useState(1);
-  const data = getExerciseHistory(Number(selectedExercise));
+  const [exercises, setExercises] = useState([]);
+  const [selectedExercise, setSelectedExercise] = useState(null);
+  const [data, setData] = useState([]);
+
+  // Load exercise list on mount
+  useEffect(() => {
+    fetch('/api/exercises')
+      .then((r) => r.json())
+      .then((exs) => {
+        setExercises(exs);
+        if (exs.length) setSelectedExercise(exs[0].id);
+      })
+      .catch(() => {});
+  }, []);
+
+  // Fetch volume history when exercise selection changes
+  useEffect(() => {
+    if (!selectedExercise) return;
+    fetch(`/api/analytics/volume?exercise_id=${selectedExercise}&days=90`)
+      .then((r) => r.json())
+      .then((pts) =>
+        setData(pts.map((d) => ({
+          date: d.date,
+          volume: d.volume,
+          weight: d.weight_lbs,
+          reps: d.reps,
+          sets: d.sets,
+        })))
+      )
+      .catch(() => setData([]));
+  }, [selectedExercise]);
 
   return (
     <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -175,8 +203,8 @@ export default function ExerciseAnalytics() {
         </p>
         <div style={{ position: 'relative' }}>
           <select
-            value={selectedExercise}
-            onChange={(e) => setSelectedExercise(e.target.value)}
+            value={selectedExercise ?? ''}
+            onChange={(e) => setSelectedExercise(Number(e.target.value))}
             style={{
               background: 'var(--bg-input)',
               border: '1px solid var(--border-input)',
@@ -188,7 +216,7 @@ export default function ExerciseAnalytics() {
               outline: 'none',
             }}
           >
-            {EXERCISES.map((e) => (
+            {exercises.map((e) => (
               <option key={e.id} value={e.id}>{e.name}</option>
             ))}
           </select>

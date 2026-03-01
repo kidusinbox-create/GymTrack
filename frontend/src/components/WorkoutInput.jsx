@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { WORKOUT_PLANS, EXERCISES } from '../data/mockData';
+import { useState, useEffect } from 'react';
 
 const OVERLAY = {
   position: 'fixed', inset: 0,
@@ -124,12 +123,8 @@ function CreatePlanModal({ onClose, onSave }) {
 
 function EditPlanModal({ plan, onClose, onSave }) {
   const [planName,  setPlanName]  = useState(plan.name);
-  // Populate existing exercises as display names
-  const toName = (ex) => {
-    const found = EXERCISES.find((e) => e.id === ex.exercise_id);
-    return found?.name ?? ex.exercise_name ?? '';
-  };
-  const [exercises, setExercises] = useState(plan.exercises.map(toName));
+  // API returns exercise_name directly on each plan exercise
+  const [exercises, setExercises] = useState(plan.exercises.map((ex) => ex.exercise_name ?? ''));
 
   const handleSave = () => {
     const cleaned = exercises.filter((e) => e.trim());
@@ -157,30 +152,30 @@ function EditPlanModal({ plan, onClose, onSave }) {
   );
 }
 
-// Convert a list of exercise name strings into the plan.exercises shape
-function namesToExercises(names) {
-  return names.map((name, i) => {
-    const match = EXERCISES.find((e) => e.name.toLowerCase() === name.toLowerCase());
-    return { exercise_id: match ? match.id : 1000 + i, exercise_name: name, sets: 3, reps: 10, weight: 0 };
-  });
-}
-
 export default function WorkoutInput() {
-  const [plans,       setPlans]       = useState(WORKOUT_PLANS);
+  const [plans,        setPlans]        = useState([]);
   const [selectedPlan, setSelectedPlan] = useState('');
-  const [showCreate,  setShowCreate]  = useState(false);
-  const [showEdit,    setShowEdit]    = useState(false);
-  const [lastLogged,  setLastLogged]  = useState(null);
-  const [inputRows,   setInputRows]   = useState([]);
+  const [showCreate,   setShowCreate]   = useState(false);
+  const [showEdit,     setShowEdit]     = useState(false);
+  const [lastLogged,   setLastLogged]   = useState(null);
+  const [inputRows,    setInputRows]    = useState([]);
 
   const activePlan = plans.find((p) => p.id === Number(selectedPlan));
+
+  // Load plans from API on mount
+  useEffect(() => {
+    fetch('/api/plans')
+      .then((r) => r.json())
+      .then(setPlans)
+      .catch(() => {});
+  }, []);
 
   const handlePlanChange = (planId) => {
     setSelectedPlan(planId);
     setLastLogged(null);
     const plan = plans.find((p) => p.id === Number(planId));
     setInputRows(plan
-      ? plan.exercises.map((ex) => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: '', reps: '', weight: '' }))
+      ? plan.exercises.map((ex) => ({ exercise_name: ex.exercise_name, sets: '', reps: '', weight: '' }))
       : []
     );
   };
@@ -188,25 +183,63 @@ export default function WorkoutInput() {
   const updateInput = (i, field, val) =>
     setInputRows(inputRows.map((r, idx) => (idx === i ? { ...r, [field]: val } : r)));
 
-  const handleLog = () => {
-    const volume = inputRows.reduce(
-      (s, r) => s + (Number(r.sets) || 0) * (Number(r.reps) || 0) * (Number(r.weight) || 0), 0
-    );
-    setLastLogged({ plan: activePlan?.name, volume, time: new Date().toLocaleTimeString() });
+  const handleLog = async () => {
+    // Expand each row (sets=N → N individual set entries)
+    const setsPayload = [];
+    inputRows.forEach((row) => {
+      const numSets = Number(row.sets) || 0;
+      const reps    = Number(row.reps) || 0;
+      const weight  = Number(row.weight) || 0;
+      for (let s = 1; s <= numSets; s++) {
+        setsPayload.push({ exercise_name: row.exercise_name, set_number: s, reps, weight_lbs: weight });
+      }
+    });
+    if (!setsPayload.length) return;
+
+    try {
+      const res = await fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan_id: activePlan?.id ?? null, sets: setsPayload }),
+      });
+      const session = await res.json();
+      setLastLogged({ plan: activePlan?.name, volume: session.total_volume, time: new Date().toLocaleTimeString() });
+    } catch {
+      // silent — keep UI functional if backend is down
+    }
   };
 
-  const handleCreate = ({ planName, exerciseNames }) => {
-    const newPlan = { id: Date.now(), name: planName, exercises: namesToExercises(exerciseNames) };
-    setPlans([...plans, newPlan]);
-    handlePlanChange(String(newPlan.id));
+  const handleCreate = async ({ planName, exerciseNames }) => {
+    try {
+      const res = await fetch('/api/plans', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: planName, exercises: exerciseNames.map((n) => ({ exercise_name: n })) }),
+      });
+      const newPlan = await res.json();
+      setPlans((prev) => [...prev, newPlan]);
+      setSelectedPlan(String(newPlan.id));
+      setInputRows(newPlan.exercises.map((ex) => ({ exercise_name: ex.exercise_name, sets: '', reps: '', weight: '' })));
+      setLastLogged(null);
+    } catch {
+      // silent
+    }
   };
 
-  const handleEdit = ({ planName, exerciseNames }) => {
-    const updated = { ...activePlan, name: planName, exercises: namesToExercises(exerciseNames) };
-    setPlans(plans.map((p) => (p.id === updated.id ? updated : p)));
-    // Refresh input rows to reflect the edited plan
-    setInputRows(updated.exercises.map((ex) => ({ exercise_id: ex.exercise_id, exercise_name: ex.exercise_name, sets: '', reps: '', weight: '' })));
-    setLastLogged(null);
+  const handleEdit = async ({ planName, exerciseNames }) => {
+    try {
+      const res = await fetch(`/api/plans/${activePlan.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: planName, exercises: exerciseNames.map((n) => ({ exercise_name: n })) }),
+      });
+      const updatedPlan = await res.json();
+      setPlans((prev) => prev.map((p) => (p.id === updatedPlan.id ? updatedPlan : p)));
+      setInputRows(updatedPlan.exercises.map((ex) => ({ exercise_name: ex.exercise_name, sets: '', reps: '', weight: '' })));
+      setLastLogged(null);
+    } catch {
+      // silent
+    }
   };
 
   return (
@@ -269,8 +302,7 @@ export default function WorkoutInput() {
             ))}
           </div>
           {inputRows.map((row, i) => {
-            const ex   = EXERCISES.find((e) => e.id === row.exercise_id);
-            const name = ex?.name ?? row.exercise_name ?? 'Exercise';
+            const name = row.exercise_name || 'Exercise';
             return (
               <div key={i} style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
                 <p style={{ flex: 3, fontSize: 11, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>

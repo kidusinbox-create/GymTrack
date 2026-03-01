@@ -1,19 +1,8 @@
+import { useState, useEffect } from 'react';
 import {
   LineChart, Line, XAxis, YAxis, Tooltip,
   CartesianGrid, ResponsiveContainer, ReferenceLine,
 } from 'recharts';
-import { getEfficiencyData } from '../data/mockData';
-
-/**
- * QB-style sigmoid rating: 1 / (1 + e^(-k*(volume - midpoint)))
- * midpoint = 5000 lbs, k = 0.0006
- * No Xmax/Xmin needed — any volume maps naturally to (0, 1)
- */
-function computeRating(volume) {
-  const k = 0.0006;
-  const midpoint = 5000;
-  return 1 / (1 + Math.exp(-k * (volume - midpoint)));
-}
 
 const getRatingLabel = (r) => {
   if (r >= 0.90) return { label: 'Elite',    color: 'var(--accent)' };
@@ -39,24 +28,29 @@ const ChartTooltip = ({ active, payload, label }) => {
 };
 
 export default function EfficiencyRating() {
-  const data = getEfficiencyData();
+  const [data, setData] = useState([]);
 
-  // Build chart data with rating
-  const chartData = [...data]
-    .reverse()
-    .map((d) => ({
-      label: d.label,
-      rating: parseFloat(computeRating(d.volume).toFixed(4)),
-    }));
+  useEffect(() => {
+    fetch('/api/analytics/efficiency?days=90')
+      .then((r) => r.json())
+      .then(setData)
+      .catch(() => {});
+  }, []);
+
+  // data is newest-first from API; reverse for chart (oldest → newest)
+  const chartData = [...data].reverse().map((d) => ({
+    label: d.date,
+    rating: d.rating,
+  }));
 
   const latest = data[0];
-  const latestRating = latest ? computeRating(latest.volume) : 0;
+  const latestRating = latest?.rating ?? 0;
   const { label: rLabel, color: rColor } = getRatingLabel(latestRating);
 
   // 7-day average
   const recent7 = data.slice(0, 7);
   const avg7 = recent7.length
-    ? recent7.reduce((s, d) => s + computeRating(d.volume), 0) / recent7.length
+    ? recent7.reduce((s, d) => s + d.rating, 0) / recent7.length
     : 0;
   const { color: avgColor } = getRatingLabel(avg7);
 
@@ -75,7 +69,7 @@ export default function EfficiencyRating() {
             <p style={{ fontSize: 13, fontWeight: 600, color: rColor }}>{rLabel}</p>
           </div>
           <p style={{ fontSize: 10, color: 'var(--text-muted)', marginTop: 1 }}>
-            {latest?.label ?? '\u2014'} &middot; {latest?.volume?.toLocaleString() ?? 0} lbs
+            {latest?.date ?? '\u2014'} &middot; {latest?.volume?.toLocaleString() ?? 0} lbs
           </p>
         </div>
 

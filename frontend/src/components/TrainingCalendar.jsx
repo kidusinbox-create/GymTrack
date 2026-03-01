@@ -1,5 +1,4 @@
-import { useState } from 'react';
-import { getCalendarData } from '../data/mockData';
+import { useState, useEffect } from 'react';
 
 const DAYS      = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const NUM_WEEKS = 8;
@@ -92,8 +91,20 @@ function ScaleBar() {
 }
 
 export default function TrainingCalendar() {
-  const calendarData  = getCalendarData();
-  const windows       = buildWindows();
+  const [calendarData, setCalendarData] = useState({});
+  const windows = buildWindows();
+
+  useEffect(() => {
+    // 24 weeks = 168 days
+    fetch('/api/analytics/efficiency?days=168')
+      .then((r) => r.json())
+      .then((pts) => {
+        const dict = {};
+        pts.forEach((p) => { dict[p.date] = p.volume; });
+        setCalendarData(dict);
+      })
+      .catch(() => {});
+  }, []);
   const [winIdx, setWinIdx] = useState(0);
   const { weeks, range }   = windows[winIdx];
 
