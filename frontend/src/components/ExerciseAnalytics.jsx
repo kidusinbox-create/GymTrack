@@ -1,183 +1,150 @@
 import { useState } from 'react';
 import {
-  LineChart, Line, BarChart, Bar, XAxis, YAxis,
-  CartesianGrid, Tooltip, ResponsiveContainer, Legend,
+  AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer,
 } from 'recharts';
 import { EXERCISES, getExerciseHistory } from '../data/mockData';
 
 const METRICS = [
-  { key: 'volume', label: 'Volume (lbs)', color: '#c8a96e' },
-  { key: 'weight', label: 'Weight (lbs)', color: '#60a5fa' },
-  { key: 'reps', label: 'Reps', color: '#4ade80' },
-  { key: 'sets', label: 'Sets', color: '#f87171' },
+  { key: 'volume', label: 'Training Volume', unit: 'lbs', color: '#c8a96e' },
+  { key: 'weight', label: 'Weight', unit: 'lbs', color: '#60a5fa' },
+  { key: 'reps', label: 'Reps', unit: '', color: '#4ade80' },
+  { key: 'sets', label: 'Sets', unit: '', color: '#f87171' },
 ];
 
-const CustomTooltip = ({ active, payload, label }) => {
+const MiniTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
   return (
     <div style={{
-      background: '#111', border: '1px solid #222',
-      borderRadius: 8, padding: '10px 14px', fontSize: 12,
+      background: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)',
+      borderRadius: 6, padding: '6px 10px', fontSize: 11,
     }}>
-      <p style={{ color: '#7a7570', marginBottom: 4 }}>{label}</p>
-      {payload.map((p) => (
-        <p key={p.dataKey} style={{ color: p.color }}>
-          {p.name}: <span style={{ color: '#f0ece4', fontWeight: 600 }}>{p.value}</span>
-        </p>
-      ))}
+      <p style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
+        {payload[0].value.toLocaleString()}{unit ? ` ${unit}` : ''}
+      </p>
     </div>
   );
 };
 
-// Styled select dropdown
-const Select = ({ value, onChange, options, placeholder }) => (
-  <div style={{ position: 'relative', display: 'inline-block' }}>
-    <select
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      style={{
-        background: '#161616',
-        border: '1px solid #333',
-        color: '#f0ece4',
-        padding: '6px 32px 6px 12px',
-        borderRadius: 6,
-        fontSize: 13,
-        cursor: 'pointer',
-        outline: 'none',
-        minWidth: 160,
-      }}
-    >
-      {placeholder && <option value="">{placeholder}</option>}
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>{o.label}</option>
-      ))}
-    </select>
-    <span style={{
-      position: 'absolute', right: 10, top: '50%',
-      transform: 'translateY(-50%)', pointerEvents: 'none',
-      color: '#c8a96e', fontSize: 10,
-    }}>▼</span>
-  </div>
-);
-
-export default function ExerciseAnalytics() {
-  const [selectedExercise, setSelectedExercise] = useState(1);
-  const [activeMetric, setActiveMetric] = useState('volume');
-
-  const data = getExerciseHistory(Number(selectedExercise));
-  const metric = METRICS.find((m) => m.key === activeMetric);
-
-  // Summary stats
+function MiniChart({ data, metric }) {
   const latest = data[data.length - 1];
   const prev = data[data.length - 2];
-  const volumeDelta = latest && prev
-    ? ((latest.volume - prev.volume) / prev.volume * 100).toFixed(1)
+  const delta = latest && prev && prev[metric.key] !== 0
+    ? ((latest[metric.key] - prev[metric.key]) / prev[metric.key] * 100).toFixed(1)
     : null;
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 12 }}>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+    <div style={{
+      flex: 1,
+      display: 'flex',
+      flexDirection: 'column',
+      background: 'var(--bg-card-hover)',
+      borderRadius: 10,
+      padding: '8px 10px 4px',
+      minHeight: 0,
+    }}>
+      {/* Label + value */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
         <div>
-          <p style={{ fontSize: 11, color: '#7a7570', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
-            Exercise Analytics
+          <p style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+            {metric.label}
           </p>
-          <Select
-            value={selectedExercise}
-            onChange={setSelectedExercise}
-            options={EXERCISES.map((e) => ({ value: e.id, label: e.name }))}
-          />
+          <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+            {latest ? latest[metric.key].toLocaleString() : '—'}
+            {metric.unit && <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 3 }}>{metric.unit}</span>}
+          </p>
         </div>
-
-        {latest && (
-          <div style={{ textAlign: 'right' }}>
-            <p style={{ fontSize: 22, fontWeight: 700, color: '#f0ece4' }}>
-              {latest.volume.toLocaleString()}
-              <span style={{ fontSize: 12, color: '#7a7570', marginLeft: 4 }}>lbs vol</span>
-            </p>
-            {volumeDelta !== null && (
-              <p style={{
-                fontSize: 12,
-                color: Number(volumeDelta) >= 0 ? '#4ade80' : '#f87171',
-              }}>
-                {Number(volumeDelta) >= 0 ? '▲' : '▼'} {Math.abs(volumeDelta)}% vs last session
-              </p>
-            )}
-          </div>
+        {delta !== null && (
+          <span style={{
+            fontSize: 10,
+            color: Number(delta) >= 0 ? 'var(--green)' : 'var(--red)',
+            fontWeight: 600,
+          }}>
+            {Number(delta) >= 0 ? '+' : ''}{delta}%
+          </span>
         )}
-      </div>
-
-      {/* Metric tabs */}
-      <div style={{ display: 'flex', gap: 6 }}>
-        {METRICS.map((m) => (
-          <button
-            key={m.key}
-            onClick={() => setActiveMetric(m.key)}
-            style={{
-              padding: '4px 10px',
-              borderRadius: 20,
-              border: `1px solid ${activeMetric === m.key ? m.color : '#2a2a2a'}`,
-              background: activeMetric === m.key ? `${m.color}18` : 'transparent',
-              color: activeMetric === m.key ? m.color : '#7a7570',
-              fontSize: 11,
-              cursor: 'pointer',
-              transition: 'all 0.15s',
-            }}
-          >
-            {m.label}
-          </button>
-        ))}
       </div>
 
       {/* Chart */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={data} margin={{ top: 4, right: 8, left: -20, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#1a1a1a" />
-            <XAxis
-              dataKey="date"
-              tick={{ fill: '#444', fontSize: 10 }}
-              tickFormatter={(d) => {
-                const dt = new Date(d);
-                return `${dt.getMonth() + 1}/${dt.getDate()}`;
-              }}
-              axisLine={{ stroke: '#222' }}
-              tickLine={false}
-            />
-            <YAxis
-              tick={{ fill: '#444', fontSize: 10 }}
-              axisLine={{ stroke: '#222' }}
-              tickLine={false}
-            />
-            <Tooltip content={<CustomTooltip />} />
-            <Line
+          <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+            <defs>
+              <linearGradient id={`grad-${metric.key}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={metric.color} stopOpacity={0.3} />
+                <stop offset="100%" stopColor={metric.color} stopOpacity={0.02} />
+              </linearGradient>
+            </defs>
+            <XAxis dataKey="date" hide />
+            <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+            <Tooltip content={<MiniTooltip unit={metric.unit} />} />
+            <Area
               type="monotone"
-              dataKey={activeMetric}
-              name={metric.label}
+              dataKey={metric.key}
               stroke={metric.color}
-              strokeWidth={2}
-              dot={{ fill: metric.color, r: 3 }}
-              activeDot={{ r: 5 }}
+              strokeWidth={1.5}
+              fill={`url(#grad-${metric.key})`}
+              dot={false}
+              activeDot={{ r: 3, fill: metric.color }}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
+    </div>
+  );
+}
 
-      {/* Mini stat row */}
-      {latest && (
-        <div style={{ display: 'flex', gap: 16, paddingTop: 8, borderTop: '1px solid #1a1a1a' }}>
-          {[
-            { label: 'Last Weight', value: `${latest.weight} lbs` },
-            { label: 'Last Reps', value: latest.reps },
-            { label: 'Last Sets', value: latest.sets },
-          ].map(({ label, value }) => (
-            <div key={label}>
-              <p style={{ fontSize: 10, color: '#7a7570', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-              <p style={{ fontSize: 15, fontWeight: 600, color: '#f0ece4' }}>{value}</p>
-            </div>
-          ))}
+export default function ExerciseAnalytics() {
+  const [selectedExercise, setSelectedExercise] = useState(1);
+  const data = getExerciseHistory(Number(selectedExercise));
+
+  return (
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+        <p style={{ fontSize: 11, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+          Exercise Analytics
+        </p>
+        <div style={{ position: 'relative' }}>
+          <select
+            value={selectedExercise}
+            onChange={(e) => setSelectedExercise(e.target.value)}
+            style={{
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-input)',
+              color: 'var(--text-primary)',
+              padding: '4px 26px 4px 10px',
+              borderRadius: 6,
+              fontSize: 12,
+              cursor: 'pointer',
+              outline: 'none',
+            }}
+          >
+            {EXERCISES.map((e) => (
+              <option key={e.id} value={e.id}>{e.name}</option>
+            ))}
+          </select>
+          <span style={{
+            position: 'absolute', right: 8, top: '50%',
+            transform: 'translateY(-50%)', pointerEvents: 'none',
+            color: 'var(--accent)', fontSize: 8,
+          }}>{'\u25BC'}</span>
         </div>
-      )}
+      </div>
+
+      {/* 2x2 mini chart grid */}
+      <div style={{
+        flex: 1,
+        display: 'grid',
+        gridTemplateColumns: '1fr 1fr',
+        gridTemplateRows: '1fr 1fr',
+        gap: 8,
+        minHeight: 0,
+      }}>
+        {METRICS.map((m) => (
+          <MiniChart key={m.key} data={data} metric={m} />
+        ))}
+      </div>
     </div>
   );
 }

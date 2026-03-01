@@ -8,7 +8,7 @@ const MONTHS = [
 ];
 
 function volumeToColor(volume, maxVolume) {
-  if (!volume) return '#1a1a1a';
+  if (!volume) return 'var(--grid-line)';
   const intensity = volume / maxVolume;
   if (intensity > 0.8) return '#c8a96e';
   if (intensity > 0.6) return '#a07840';
@@ -40,43 +40,37 @@ export default function TrainingCalendar() {
   const todayStr = today.toISOString().split('T')[0];
 
   return (
-    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 14 }}>
+    <div style={{ height: '100%', display: 'flex', flexDirection: 'column', gap: 8 }}>
       {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
         <div>
-          <p style={{ fontSize: 11, color: '#7a7570', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
+          <p style={{ fontSize: 10, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 2 }}>
             Training Calendar
           </p>
-          <p style={{ fontSize: 18, fontWeight: 700, color: '#f0ece4' }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)' }}>
             {MONTHS[month]} {year}
           </p>
         </div>
         <div style={{ display: 'flex', gap: 4 }}>
-          <button
-            onClick={prevMonth}
-            style={{
-              background: '#161616', border: '1px solid #2a2a2a',
-              color: '#7a7570', borderRadius: 6, padding: '4px 10px',
-              cursor: 'pointer', fontSize: 14, lineHeight: 1,
-            }}
-          >‹</button>
-          <button
-            onClick={nextMonth}
-            style={{
-              background: '#161616', border: '1px solid #2a2a2a',
-              color: '#7a7570', borderRadius: 6, padding: '4px 10px',
-              cursor: 'pointer', fontSize: 14, lineHeight: 1,
-            }}
-          >›</button>
+          <button onClick={prevMonth} style={{
+            background: 'var(--bg-card-hover)', border: '1px solid var(--border-input)',
+            color: 'var(--text-secondary)', borderRadius: 6, padding: '3px 8px',
+            cursor: 'pointer', fontSize: 13, lineHeight: 1,
+          }}>{'\u2039'}</button>
+          <button onClick={nextMonth} style={{
+            background: 'var(--bg-card-hover)', border: '1px solid var(--border-input)',
+            color: 'var(--text-secondary)', borderRadius: 6, padding: '3px 8px',
+            cursor: 'pointer', fontSize: 13, lineHeight: 1,
+          }}>{'\u203A'}</button>
         </div>
       </div>
 
       {/* Day headers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, flexShrink: 0 }}>
         {DAYS.map((d) => (
           <div key={d} style={{
-            textAlign: 'center', fontSize: 10,
-            color: '#444', fontWeight: 600,
+            textAlign: 'center', fontSize: 9,
+            color: 'var(--text-muted)', fontWeight: 600,
             textTransform: 'uppercase', letterSpacing: '0.06em',
           }}>
             {d}
@@ -85,11 +79,9 @@ export default function TrainingCalendar() {
       </div>
 
       {/* Calendar grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 3, flex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, flex: 1 }}>
         {cells.map((day, i) => {
-          if (!day) {
-            return <div key={`empty-${i}`} />;
-          }
+          if (!day) return <div key={`empty-${i}`} />;
 
           const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
           const volume = calendarData[dateStr] || 0;
@@ -102,17 +94,16 @@ export default function TrainingCalendar() {
               title={volume ? `${dateStr}: ${volume.toLocaleString()} lbs` : dateStr}
               style={{
                 aspectRatio: '1',
-                borderRadius: 4,
+                borderRadius: 3,
                 background: isFuture ? 'transparent' : volumeToColor(volume, maxVolume),
-                border: isToday ? '1px solid #c8a96e' : '1px solid transparent',
+                border: isToday ? '1px solid var(--accent)' : '1px solid transparent',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                fontSize: 10,
-                color: volume > 0 ? '#f0ece4' : isFuture ? '#2a2a2a' : '#444',
+                fontSize: 9,
+                color: volume > 0 ? '#f0ece4' : isFuture ? 'var(--border-input)' : 'var(--text-muted)',
                 fontWeight: isToday ? 700 : 400,
                 cursor: volume ? 'pointer' : 'default',
-                transition: 'opacity 0.1s',
               }}
             >
               {day}
@@ -122,16 +113,14 @@ export default function TrainingCalendar() {
       </div>
 
       {/* Legend */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: 6, paddingTop: 8, borderTop: '1px solid #1a1a1a' }}>
-        <span style={{ fontSize: 10, color: '#444' }}>Low</span>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 4, paddingTop: 6, borderTop: '1px solid var(--grid-line)', flexShrink: 0 }}>
+        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>Low</span>
         {['#241e14', '#3d3020', '#6b5030', '#a07840', '#c8a96e'].map((c) => (
-          <div key={c} style={{
-            width: 14, height: 14, borderRadius: 3, background: c,
-          }} />
+          <div key={c} style={{ width: 12, height: 12, borderRadius: 2, background: c }} />
         ))}
-        <span style={{ fontSize: 10, color: '#444' }}>High</span>
+        <span style={{ fontSize: 9, color: 'var(--text-muted)' }}>High</span>
 
-        <div style={{ marginLeft: 'auto', display: 'flex', gap: 12 }}>
+        <div style={{ marginLeft: 'auto', display: 'flex', gap: 10 }}>
           {[
             {
               label: 'Sessions',
@@ -153,8 +142,8 @@ export default function TrainingCalendar() {
             },
           ].map(({ label, value }) => (
             <div key={label} style={{ textAlign: 'center' }}>
-              <p style={{ fontSize: 10, color: '#7a7570', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
-              <p style={{ fontSize: 15, fontWeight: 700, color: '#c8a96e' }}>{value}</p>
+              <p style={{ fontSize: 9, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{label}</p>
+              <p style={{ fontSize: 13, fontWeight: 700, color: 'var(--accent)' }}>{value}</p>
             </div>
           ))}
         </div>

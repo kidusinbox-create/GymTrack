@@ -1,10 +1,12 @@
 @import "tailwindcss";
 
-:root {
+:root, [data-theme="dark"] {
   --bg-dark: #0a0a0a;
   --bg-card: #111111;
   --bg-card-hover: #161616;
-  --border: #222222;
+  --bg-input: #161616;
+  --border: #1e1e1e;
+  --border-input: #2a2a2a;
   --accent: #c8a96e;
   --accent-dim: #8a7044;
   --text-primary: #f0ece4;
@@ -13,6 +15,31 @@
   --green: #4ade80;
   --red: #f87171;
   --blue: #60a5fa;
+  --grid-line: #1a1a1a;
+  --chart-bg: #111;
+  --tooltip-bg: #111;
+  --tooltip-border: #222;
+}
+
+[data-theme="light"] {
+  --bg-dark: #f5f3ef;
+  --bg-card: #ffffff;
+  --bg-card-hover: #faf9f7;
+  --bg-input: #f0eeea;
+  --border: #e2dfd8;
+  --border-input: #d4d0c8;
+  --accent: #9a7b42;
+  --accent-dim: #b89a5a;
+  --text-primary: #1a1816;
+  --text-secondary: #6b6560;
+  --text-muted: #a09a90;
+  --green: #16a34a;
+  --red: #dc2626;
+  --blue: #2563eb;
+  --grid-line: #eae7e0;
+  --chart-bg: #fff;
+  --tooltip-bg: #fff;
+  --tooltip-border: #e2dfd8;
 }
 
 * {
@@ -21,12 +48,15 @@
   padding: 0;
 }
 
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   background-color: var(--bg-dark);
   color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  min-height: 100vh;
-  overflow-x: hidden;
 }
 
 ::-webkit-scrollbar {
