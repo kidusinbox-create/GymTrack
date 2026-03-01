@@ -101,12 +101,14 @@ export default function App() {
           <ExerciseAnalytics />
         </Card>
 
-        {/* Top Right — Efficiency + Workout Input stacked */}
+        {/* Top Right — Efficiency (big) + Workout Input (small) stacked */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-          <Card style={{ flexShrink: 0 }}>
+          {/* Effort rating gets ~65% of the column height */}
+          <Card style={{ flex: 65, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <EfficiencyRating />
           </Card>
-          <Card style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {/* Today's workout gets ~35% */}
+          <Card style={{ flex: 35, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <WorkoutInput />
           </Card>
         </div>

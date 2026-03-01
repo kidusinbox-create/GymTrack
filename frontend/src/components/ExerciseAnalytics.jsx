@@ -5,20 +5,50 @@ import {
 import { EXERCISES, getExerciseHistory } from '../data/mockData';
 
 const METRICS = [
-  { key: 'volume', label: 'Training Volume', unit: 'lbs', color: '#c8a96e' },
-  { key: 'weight', label: 'Weight', unit: 'lbs', color: '#60a5fa' },
-  { key: 'reps', label: 'Reps', unit: '', color: '#4ade80' },
-  { key: 'sets', label: 'Sets', unit: '', color: '#f87171' },
+  {
+    key: 'volume',
+    label: 'Training Volume',
+    formula: 'Sets \u00D7 Reps \u00D7 Weight',
+    unit: 'lbs',
+    color: '#c8a96e',
+    yLabel: 'Volume (lbs)',
+  },
+  {
+    key: 'weight',
+    label: 'Weight',
+    formula: null,
+    unit: 'lbs',
+    color: '#60a5fa',
+    yLabel: 'lbs',
+  },
+  {
+    key: 'reps',
+    label: 'Reps',
+    formula: null,
+    unit: '',
+    color: '#4ade80',
+    yLabel: 'Reps',
+  },
+  {
+    key: 'sets',
+    label: 'Sets',
+    formula: null,
+    unit: '',
+    color: '#f87171',
+    yLabel: 'Sets',
+  },
 ];
 
 const MiniTooltip = ({ active, payload, label, unit }) => {
   if (!active || !payload?.length) return null;
+  const d = new Date(label);
+  const dateStr = isNaN(d) ? label : `${d.getMonth() + 1}/${d.getDate()}`;
   return (
     <div style={{
       background: 'var(--tooltip-bg)', border: '1px solid var(--tooltip-border)',
       borderRadius: 6, padding: '6px 10px', fontSize: 11,
     }}>
-      <p style={{ color: 'var(--text-muted)' }}>{label}</p>
+      <p style={{ color: 'var(--text-muted)' }}>{dateStr}</p>
       <p style={{ color: 'var(--text-primary)', fontWeight: 600 }}>
         {payload[0].value.toLocaleString()}{unit ? ` ${unit}` : ''}
       </p>
@@ -33,6 +63,11 @@ function MiniChart({ data, metric }) {
     ? ((latest[metric.key] - prev[metric.key]) / prev[metric.key] * 100).toFixed(1)
     : null;
 
+  const tickFormatter = (d) => {
+    const dt = new Date(d);
+    return isNaN(dt) ? d : `${dt.getMonth() + 1}/${dt.getDate()}`;
+  };
+
   return (
     <div style={{
       flex: 1,
@@ -40,23 +75,30 @@ function MiniChart({ data, metric }) {
       flexDirection: 'column',
       background: 'var(--bg-card-hover)',
       borderRadius: 10,
-      padding: '8px 10px 4px',
+      padding: '8px 8px 4px 8px',
       minHeight: 0,
     }}>
-      {/* Label + value */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 2 }}>
+      {/* Label row */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 1, flexShrink: 0 }}>
         <div>
-          <p style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            {metric.label}
-          </p>
-          <p style={{ fontSize: 16, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
-            {latest ? latest[metric.key].toLocaleString() : '—'}
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 4, flexWrap: 'wrap' }}>
+            <p style={{ fontSize: 9, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+              {metric.label}
+            </p>
+            {metric.formula && (
+              <p style={{ fontSize: 8, color: 'var(--accent)', letterSpacing: '0.02em' }}>
+                = {metric.formula}
+              </p>
+            )}
+          </div>
+          <p style={{ fontSize: 15, fontWeight: 700, color: 'var(--text-primary)', lineHeight: 1.2 }}>
+            {latest ? latest[metric.key].toLocaleString() : '\u2014'}
             {metric.unit && <span style={{ fontSize: 9, color: 'var(--text-muted)', marginLeft: 3 }}>{metric.unit}</span>}
           </p>
         </div>
         {delta !== null && (
           <span style={{
-            fontSize: 10,
+            fontSize: 9,
             color: Number(delta) >= 0 ? 'var(--green)' : 'var(--red)',
             fontWeight: 600,
           }}>
@@ -68,15 +110,41 @@ function MiniChart({ data, metric }) {
       {/* Chart */}
       <div style={{ flex: 1, minHeight: 0 }}>
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={data} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
+          <AreaChart data={data} margin={{ top: 4, right: 6, left: 0, bottom: 16 }}>
             <defs>
               <linearGradient id={`grad-${metric.key}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor={metric.color} stopOpacity={0.3} />
                 <stop offset="100%" stopColor={metric.color} stopOpacity={0.02} />
               </linearGradient>
             </defs>
-            <XAxis dataKey="date" hide />
-            <YAxis hide domain={['dataMin - 5', 'dataMax + 5']} />
+            <XAxis
+              dataKey="date"
+              tick={{ fill: 'var(--text-muted)', fontSize: 8 }}
+              tickFormatter={tickFormatter}
+              axisLine={{ stroke: 'var(--grid-line)' }}
+              tickLine={false}
+              interval="preserveStartEnd"
+              label={{
+                value: 'Date',
+                position: 'insideBottom',
+                offset: -4,
+                style: { fontSize: 8, fill: 'var(--text-muted)' },
+              }}
+            />
+            <YAxis
+              tick={{ fill: 'var(--text-muted)', fontSize: 8 }}
+              axisLine={{ stroke: 'var(--grid-line)' }}
+              tickLine={false}
+              width={34}
+              tickFormatter={(v) => v >= 1000 ? `${(v / 1000).toFixed(1)}k` : v}
+              label={{
+                value: metric.yLabel,
+                angle: -90,
+                position: 'insideLeft',
+                offset: 10,
+                style: { fontSize: 8, fill: 'var(--text-muted)' },
+              }}
+            />
             <Tooltip content={<MiniTooltip unit={metric.unit} />} />
             <Area
               type="monotone"
