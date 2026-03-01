@@ -3,7 +3,6 @@ import './index.css';
 import ExerciseAnalytics from './components/ExerciseAnalytics';
 import TrainingCalendar from './components/TrainingCalendar';
 import EfficiencyRating from './components/EfficiencyRating';
-import MuscleHeatmap from './components/MuscleHeatmap';
 import WorkoutInput from './components/WorkoutInput';
 
 function Card({ children, style = {} }) {
@@ -101,16 +100,13 @@ export default function App() {
           <ExerciseAnalytics />
         </Card>
 
-        {/* Top Right — Effort Rating (big) + Muscle Activation (below) */}
+        {/* Top Right — Effort Rating (full) + empty reserved slot below */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-          {/* Effort Rating ~60% */}
           <Card style={{ flex: 60, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <EfficiencyRating />
           </Card>
-          {/* Muscle Heatmap ~40% */}
-          <Card style={{ flex: 40, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <MuscleHeatmap />
-          </Card>
+          {/* Reserved — content TBD */}
+          <Card style={{ flex: 40, minHeight: 0 }} />
         </div>
 
         {/* Bottom Left — Training Calendar */}
