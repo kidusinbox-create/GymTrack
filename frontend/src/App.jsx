@@ -101,15 +101,15 @@ export default function App() {
           <ExerciseAnalytics />
         </Card>
 
-        {/* Top Right — Efficiency (big) + Workout Input (small) stacked */}
+        {/* Top Right — Effort Rating (big) + Muscle Activation (below) */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, minHeight: 0 }}>
-          {/* Effort rating gets ~65% of the column height */}
-          <Card style={{ flex: 65, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {/* Effort Rating ~60% */}
+          <Card style={{ flex: 60, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
             <EfficiencyRating />
           </Card>
-          {/* Today's workout gets ~35% */}
-          <Card style={{ flex: 35, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <WorkoutInput />
+          {/* Muscle Heatmap ~40% */}
+          <Card style={{ flex: 40, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+            <MuscleHeatmap />
           </Card>
         </div>
 
@@ -118,9 +118,9 @@ export default function App() {
           <TrainingCalendar />
         </Card>
 
-        {/* Bottom Right — Muscle Heatmap */}
+        {/* Bottom Right — Today's Workout (full cell) */}
         <Card style={{ display: 'flex', flexDirection: 'column' }}>
-          <MuscleHeatmap />
+          <WorkoutInput />
         </Card>
       </div>
     </div>

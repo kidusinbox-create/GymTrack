@@ -8,7 +8,7 @@ const METRICS = [
   {
     key: 'volume',
     label: 'Training Volume',
-    formula: 'Sets \u00D7 Reps \u00D7 Weight',
+    formula: 'TV\u202F=\u202F\u03A3\u202F(s\u202F\u00D7\u202Fr\u202F\u00D7\u202Fw)',
     unit: 'lbs',
     color: '#c8a96e',
     yLabel: 'Volume (lbs)',
