@@ -1,0 +1,21 @@
+risk:
+  starting_bankroll: 500
+  max_daily_loss: 25
+  max_per_game_exposure: 75
+  max_open_positions: 3
+  min_edge_threshold: 0.08
+  kelly_fraction: 0.25
+  scale_up_threshold: 0.78
+  exit_loss_threshold: -0.15
+
+scout:
+  star_player_usage_threshold: 25.0
+  min_sportsbook_probability: 0.60
+  max_kalshi_entry_price: 0.75
+
+schedule:
+  scout_hours_before_tip: 2
+  confirm_poll_interval_seconds: 60
+
+auto_trade:
+  enabled: false  # Feature flag — alerts only until this is true
